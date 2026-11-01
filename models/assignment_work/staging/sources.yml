@@ -6,7 +6,7 @@ sources:
     database: pistol-project26
     schema: nyc_homework_raw_data
     tables:
-      - name: source_dot_service_requests
+      - name: source_service_requests_homework
         description: |
           NYC 311 service requests for Dept of Transportation.
           One row per service request.
