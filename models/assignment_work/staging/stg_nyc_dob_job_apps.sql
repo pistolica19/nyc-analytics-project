@@ -14,9 +14,8 @@ cleaned AS (
             borough,
             job_type,
             initial_cost,
-            total_fee,
-            gis_latitude,
-            gis_longitude
+            latitude,
+            longitude
         ),
 
         -- Identifiers
@@ -29,7 +28,7 @@ cleaned AS (
         -- Timestamps
         CAST(filing_date AS TIMESTAMP) AS filing_date,
 
-        -- Standardized Borough (aligned with 311 staging conventions)
+        -- Standardized Borough (matches 311 staging conventions)
         CASE
             WHEN UPPER(TRIM(borough)) IN ('MANHATTAN', 'NEW YORK') THEN 'Manhattan'
             WHEN UPPER(TRIM(borough)) IN ('BRONX', 'THE BRONX') THEN 'Bronx'
@@ -41,11 +40,10 @@ cleaned AS (
 
         -- Financial / Cost measures
         SAFE_CAST(initial_cost AS NUMERIC) AS initial_cost,
-        SAFE_CAST(total_fee AS NUMERIC) AS total_fee,
 
         -- Coordinates
-        SAFE_CAST(gis_latitude AS DECIMAL) AS latitude,
-        SAFE_CAST(gis_longitude AS DECIMAL) AS longitude,
+        SAFE_CAST(latitude AS DECIMAL) AS latitude,
+        SAFE_CAST(longitude AS DECIMAL) AS longitude,
 
         -- Metadata tracking
         CURRENT_TIMESTAMP() AS stg_loaded_at
