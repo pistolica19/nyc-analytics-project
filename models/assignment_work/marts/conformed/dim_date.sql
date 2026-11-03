@@ -1,4 +1,3 @@
--- Date dimension shared by DOT 311 service requests and DOB NOW job filings
 WITH stg_311 AS (
     SELECT * FROM {{ ref('stg_nyc_311_dot') }}
 ),
@@ -7,9 +6,9 @@ stg_dob AS (
     SELECT * FROM {{ ref('stg_nyc_dob_job_apps') }}
 ),
 
--- Collect all possible event dates from both sources
+-- Collect all unique dates across both datasets
 all_dates AS (
-    -- 311 service requests: date roles
+    -- 311 date fields
     SELECT DISTINCT CAST(created_date AS DATE) AS full_date
     FROM stg_311
     WHERE created_date IS NOT NULL
@@ -22,7 +21,7 @@ all_dates AS (
 
     UNION DISTINCT
 
-    -- DOB NOW job filings: date roles
+    -- DOB job filings date fields
     SELECT DISTINCT CAST(filing_date AS DATE) AS full_date
     FROM stg_dob
     WHERE filing_date IS NOT NULL
@@ -46,6 +45,7 @@ all_dates AS (
     WHERE approved_date IS NOT NULL
 ),
 
+-- Add calendar attributes and NYC fiscal year (starts July 1)
 date_dimension AS (
     SELECT
         {{ dbt_utils.generate_surrogate_key(['full_date']) }} AS date_key,
@@ -65,7 +65,7 @@ date_dimension AS (
     FROM all_dates
 ),
 
--- Null placeholder row: handles missing dates while preserving INNER JOINs
+-- Null placeholder row so inner joins still work for missing dates
 null_placeholder AS (
     SELECT
         '-1' AS date_key,
@@ -84,4 +84,3 @@ null_placeholder AS (
 SELECT * FROM date_dimension
 UNION ALL
 SELECT * FROM null_placeholder
-```[cite: 33, 34, 35, 36]
