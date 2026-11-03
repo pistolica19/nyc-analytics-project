@@ -6,9 +6,9 @@ stg_dob AS (
     SELECT * FROM {{ ref('stg_nyc_dob_job_apps') }}
 ),
 
--- Collect all unique dates across both datasets
+-- Collect and union all distinct dates across both datasets
 all_dates AS (
-    -- 311 date fields
+    -- 311 service requests: date roles
     SELECT DISTINCT CAST(created_date AS DATE) AS full_date
     FROM stg_311
     WHERE created_date IS NOT NULL
@@ -21,31 +21,37 @@ all_dates AS (
 
     UNION DISTINCT
 
-    -- DOB job filings date fields
-    SELECT DISTINCT CAST(filing_date AS DATE) AS full_date
+    -- DOB NOW job filings: convert timestamp strings to timestamp then date
+    SELECT DISTINCT CAST(SAFE_CAST(filing_date AS TIMESTAMP) AS DATE) AS full_date
     FROM stg_dob
     WHERE filing_date IS NOT NULL
 
     UNION DISTINCT
 
-    SELECT DISTINCT CAST(current_status_date AS DATE) AS full_date
+    SELECT DISTINCT CAST(SAFE_CAST(current_status_date AS TIMESTAMP) AS DATE) AS full_date
     FROM stg_dob
     WHERE current_status_date IS NOT NULL
 
     UNION DISTINCT
 
-    SELECT DISTINCT CAST(first_permit_date AS DATE) AS full_date
+    SELECT DISTINCT CAST(SAFE_CAST(first_permit_date AS TIMESTAMP) AS DATE) AS full_date
     FROM stg_dob
     WHERE first_permit_date IS NOT NULL
 
     UNION DISTINCT
 
-    SELECT DISTINCT CAST(approved_date AS DATE) AS full_date
+    SELECT DISTINCT CAST(SAFE_CAST(approved_date AS TIMESTAMP) AS DATE) AS full_date
     FROM stg_dob
     WHERE approved_date IS NOT NULL
+
+    UNION DISTINCT
+
+    SELECT DISTINCT CAST(SAFE_CAST(signoff_date AS TIMESTAMP) AS DATE) AS full_date
+    FROM stg_dob
+    WHERE signoff_date IS NOT NULL
 ),
 
--- Add calendar attributes and NYC fiscal year (starts July 1)
+-- Date dimension attributes including NYC fiscal year (July 1 - June 30)
 date_dimension AS (
     SELECT
         {{ dbt_utils.generate_surrogate_key(['full_date']) }} AS date_key,
@@ -63,9 +69,10 @@ date_dimension AS (
             ELSE EXTRACT(YEAR FROM full_date)
         END AS fiscal_year
     FROM all_dates
+    WHERE full_date IS NOT NULL
 ),
 
--- Null placeholder row so inner joins still work for missing dates
+-- Kimball null placeholder row for missing dates
 null_placeholder AS (
     SELECT
         '-1' AS date_key,
