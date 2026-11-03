@@ -1,11 +1,10 @@
 -- Complaint type dimension for DOT 311 service requests
--- Grain: one row per distinct complaint_type and descriptor combination
+-- Grain: one row per distinct (complaint_type, descriptor) combination
 
 WITH stg_311 AS (
     SELECT * FROM {{ ref('stg_nyc_311_dot') }}
 ),
 
--- Get unique pairs of complaint type and descriptor
 distinct_complaint_types AS (
     SELECT DISTINCT
         complaint_type,
@@ -14,11 +13,11 @@ distinct_complaint_types AS (
     WHERE complaint_type IS NOT NULL
 ),
 
--- Group descriptors into broader categories based on keywords
 enriched AS (
     SELECT
         complaint_type,
         descriptor,
+        -- Derived category based on keywords appearing in descriptor
         CASE
             WHEN LOWER(descriptor) LIKE '%sidewalk%' THEN 'sidewalk'
             WHEN LOWER(descriptor) LIKE '%street%' THEN 'street'
@@ -29,11 +28,11 @@ enriched AS (
     FROM distinct_complaint_types
 ),
 
--- Generate surrogate key
 dim_complaint_type AS (
     SELECT
         {{ dbt_utils.generate_surrogate_key([
-            'complaint_type', 'descriptor'
+            'complaint_type',
+            'descriptor'
         ]) }} AS complaint_type_key,
         complaint_type,
         descriptor,
