@@ -1,11 +1,10 @@
 -- Filing representative dimension for DOB NOW job filings
--- Grain: one row per distinct combination of representative attributes
+-- Grain: one row per distinct combo of filing representative attributes
 
 WITH stg_dob AS (
     SELECT * FROM {{ ref('stg_nyc_dob_job_apps') }}
 ),
 
--- Pull unique combinations of representative info
 distinct_filing_reps AS (
     SELECT DISTINCT
         filing_representative_first_name AS first_name,
@@ -26,13 +25,17 @@ distinct_filing_reps AS (
        OR filing_representative_zip IS NOT NULL
 ),
 
--- Generate surrogate key for representative records
 dim_filing_rep AS (
     SELECT
         {{ dbt_utils.generate_surrogate_key([
-            'first_name', 'middle_initial', 'last_name',
+            'first_name',
+            'middle_initial',
+            'last_name',
             'business_name',
-            'street_name', 'city', 'state', 'zip'
+            'street_name',
+            'city',
+            'state',
+            'zip'
         ]) }} AS filing_representative_key,
         first_name,
         middle_initial,
@@ -45,7 +48,8 @@ dim_filing_rep AS (
     FROM distinct_filing_reps
 ),
 
--- Kimball null placeholder row for filings without representative info
+-- Null-placeholder row
+-- Some DOB job filings don't have one per initial data review
 null_placeholder AS (
     SELECT
         '-1' AS filing_representative_key,
