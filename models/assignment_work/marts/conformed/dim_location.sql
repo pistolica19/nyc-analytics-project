@@ -1,6 +1,3 @@
--- Conformed location dimension shared by 311 and DOB filings
--- Grain: one row per distinct borough, council district, and zip combination
-
 WITH stg_311 AS (
     SELECT * FROM {{ ref('stg_nyc_311_dot') }}
 ),
@@ -9,7 +6,6 @@ stg_dob AS (
     SELECT * FROM {{ ref('stg_nyc_dob_job_apps') }}
 ),
 
--- Collect and combine all unique location attributes from both datasets
 all_locations AS (
     SELECT DISTINCT
         borough,
@@ -43,7 +39,7 @@ location_dimension AS (
     FROM all_locations
 ),
 
--- Kimball null placeholder row for records with missing location info
+-- Null placeholder row to handle NULL values
 null_placeholder AS (
     SELECT
         '-1' AS location_key,
